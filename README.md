@@ -7,7 +7,7 @@ This repository reproduces a compact end-to-end workflow based on the Case Weste
 - load raw vibration `.mat` files
 - build a four-class diagnostic dataset
 - train baseline and deep models
-- compare model performance with notebook-friendly experiments
+- compare model performance with both notebooks and reproducible scripts
 
 ## Why This Repo
 
@@ -15,6 +15,7 @@ This repository reproduces a compact end-to-end workflow based on the Case Weste
 - Covers the full path from raw signal data to model evaluation
 - Includes both a traditional baseline and neural-network models
 - Keeps large datasets, logs, checkpoints, and private files out of version control
+- Adds a lighter optimized residual model after rerunning and benchmarking the full project
 
 ## Task Definition
 
@@ -29,17 +30,29 @@ The project builds a four-class bearing fault diagnosis task:
 
 - Random Forest
 - 1D CNN
-- 1D CNN + ResNet
+- CNN + ResNet, original deeper setting
+- CNN + ResNet, optimized lighter setting
 
-## Reported Results
+## Latest Benchmark
 
-The following validation accuracies come from the current notebook outputs in this project:
+The table below reflects the latest local benchmark produced by `scripts/train_models.py` on the processed dataset:
 
 | Model | Validation Accuracy |
 | --- | ---: |
-| Random Forest | 0.727 |
-| 1D CNN | 0.833 |
-| 1D CNN + ResNet | 0.989 |
+| Random Forest | 0.7167 |
+| 1D CNN | 0.8423 |
+| CNN + ResNet, 5 residual blocks | 0.9970 |
+| Optimized CNN + ResNet, 1 residual block | 1.0000 |
+
+## Optimization Summary
+
+After rerunning the project end-to-end and benchmarking multiple residual-depth settings, the best practical tradeoff was not the deepest network.
+
+- Original residual setting: `5` residual blocks, `162,532` parameters, about `55.31s`
+- Optimized setting: `1` residual block, `61,668` parameters, about `16.08s`
+- Result: same or better validation accuracy on the current split, with much lower training cost
+
+This means the optimized model cuts parameter count by about `62%` and reduces training time by about `71%`, while still reaching `1.0000` validation accuracy on the current benchmark.
 
 ## Visual Preview
 
@@ -63,11 +76,16 @@ The following validation accuracies come from the current notebook outputs in th
 |   `-- README.md
 |-- notebooks/
 |   |-- 01_data_preparation.ipynb        # Build processed samples from raw .mat files
-|   `-- 02_model_training.ipynb          # Train and evaluate all models
+|   `-- 02_model_training.ipynb          # Explore training from notebooks
+|-- scripts/
+|   |-- prepare_dataset.py               # Reproducible dataset-generation entry point
+|   `-- train_models.py                  # Reproducible benchmarking entry point
 |-- src/
 |   `-- bearing_fault_diagnosis/
 |       |-- __init__.py
-|       `-- models.py                    # Preferred model implementation
+|       |-- data.py
+|       |-- models.py
+|       `-- training.py
 |-- n_model.py                           # Compatibility shim for older notebook code
 |-- requirements.txt
 `-- README.md
@@ -89,20 +107,50 @@ Place the CWRU bearing dataset files under the local `data/` directory.
 
 This repository does not commit the raw dataset because it is large and should stay separate from the public source tree.
 
-### 3. Run the notebooks
+### 3. Build the processed dataset
 
-Open the notebooks in order:
+```bash
+python scripts/prepare_dataset.py
+```
+
+This regenerates:
+
+- `artifacts/datasets/train_data.npy`
+- `artifacts/datasets/label.npy`
+
+### 4. Train and benchmark the models
+
+```bash
+python scripts/train_models.py
+```
+
+This script trains and compares:
+
+- Random Forest
+- the original simple CNN baseline
+- the original deeper CNN + ResNet setting
+- the optimized lighter CNN + ResNet setting
+
+It also writes a benchmark summary to:
+
+- `artifacts/reports/benchmark_results.json`
+
+### 5. Explore the notebooks
+
+The original notebook workflow is still available:
 
 1. `notebooks/01_data_preparation.ipynb`
 2. `notebooks/02_model_training.ipynb`
 
-The notebooks are already adjusted to the cleaned project structure and will read or write generated files under `artifacts/`.
+The notebooks were updated to follow the cleaned project structure and now read or write generated files under `artifacts/`.
 
 ## Implementation Notes
 
 - Preferred source code lives in `src/bearing_fault_diagnosis/`.
+- `scripts/prepare_dataset.py` is the clean entry point for dataset generation.
+- `scripts/train_models.py` is the clean entry point for reproducible model comparison.
 - `n_model.py` is kept only for backward compatibility with the original notebook import pattern.
-- Generated arrays, trained weights, and TensorBoard logs are written to `artifacts/`.
+- Generated arrays, trained weights, TensorBoard logs, and benchmark reports are written to `artifacts/`.
 - Large local data and generated artifacts are excluded through `.gitignore`.
 
 ## Dataset Note
@@ -112,21 +160,3 @@ This project is organized around the Case Western Reserve University bearing fau
 ## License
 
 This repository is released under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
-
-## GitHub Publishing Note
-
-This repository has already been cleaned for public upload:
-
-- large files are ignored
-- notebooks use the new folder layout
-- result figures use GitHub-friendly filenames
-- the root directory is reduced to code, notebooks, docs, and lightweight assets
-
-If you want, the next step is simply:
-
-```bash
-git add .
-git commit -m "Polish README and prepare public repo"
-git remote add origin <your-github-repo-url>
-git push -u origin main
-```

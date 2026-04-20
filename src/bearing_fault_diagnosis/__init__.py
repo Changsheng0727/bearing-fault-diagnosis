@@ -1,5 +1,12 @@
 """Bearing fault diagnosis package."""
 
-from .models import CNNResNetModel
+from .data import build_processed_dataset, load_processed_dataset, save_processed_dataset
+from .models import CNNResNetModel, SimpleCNNModel
 
-__all__ = ["CNNResNetModel"]
+__all__ = [
+    "build_processed_dataset",
+    "load_processed_dataset",
+    "save_processed_dataset",
+    "CNNResNetModel",
+    "SimpleCNNModel",
+]
