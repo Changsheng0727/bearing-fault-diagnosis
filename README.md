@@ -109,6 +109,10 @@ The notebooks are already adjusted to the cleaned project structure and will rea
 
 This project is organized around the Case Western Reserve University bearing fault dataset. If you publish or redistribute derived work, please make sure your usage complies with the dataset's original terms and citation expectations.
 
+## License
+
+This repository is released under the Apache-2.0 License. See the [LICENSE](LICENSE) file for details.
+
 ## GitHub Publishing Note
 
 This repository has already been cleaned for public upload:
